@@ -6,7 +6,7 @@ const Comments = require("../schemas/commnets.js");
 router.get("/posts", async (req, res) => {
   // 게시물 조회
   const posts = await Posts.find();
-  result = posts.map((post) => {
+  showPost = posts.map((post) => {
     return {
       _id: post.id,
       user: post.user,
@@ -14,6 +14,9 @@ router.get("/posts", async (req, res) => {
       content: post.content,
       createdAt: post.createdAt,
     };
+  });
+  const result = showPost.sort((a, b) => {
+    return a.createdAt - b.createdAt;
   });
   res.json({ posts: result });
 });
@@ -54,8 +57,8 @@ router.put("/posts/:postId", async (req, res) => {
   const { postId } = req.params;
   const { user, password, title, content } = req.body;
 
-  const existsPosts = await Posts.find({ postId: postId });
-
+  const existsPosts = await Posts.find({ _id: postId });
+  console.log(existsPosts);
   if (existsPosts.length && password === existsPosts[0].password) {
     await Posts.updateOne(
       { _id: postId },
@@ -110,6 +113,8 @@ router.post("/posts/:postId/comments", async (req, res) => {
     });
 
     res.json({ message: "성공적으로 저장되었습니다." });
+  } else if (content === "") {
+    return res.json({ message: "댓글을 입력해주세요" });
   }
 
   res.status(400).json({ message: "post가 존재하지 않습니다" });
@@ -119,7 +124,7 @@ router.get("/posts/:postId/comments", async (req, res) => {
   const { postId } = req.params;
   const comments = await Comments.find();
   const getComments = comments.filter((comment) => postId === comment.postId);
-  result = getComments.map((comment) => {
+  const showComments = getComments.map((comment) => {
     return {
       _id: comment._id,
       user: comment.user,
@@ -127,6 +132,9 @@ router.get("/posts/:postId/comments", async (req, res) => {
       postId: postId,
       createdAt: comment.createdAt,
     };
+  });
+  const result = showComments.sort((a, b) => {
+    return a.createdAt - b.createdAt;
   });
   res.status(200).json({ comments: result });
 });
@@ -156,9 +164,8 @@ router.put("/posts/:postId/comments/:commentId", async (req, res) => {
   const { user, password, content } = req.body;
 
   const existComments = await Comments.find({ _id: commentId });
-  console.log(existComments)
 
-  if (existComments.length && password === existComments[0].password) {
+  if ( existComments.length && password === existComments[0].password && content !== "") {
     await Comments.updateOne(
       { _id: commentId },
       {
@@ -173,10 +180,15 @@ router.put("/posts/:postId/comments/:commentId", async (req, res) => {
     res.status(200).json({
       success: true,
     });
+  } else if (content === "") {
+    res.status(400).json({
+      message: "댓글을 입력해주세요",
+    });
+  } else {
+    res.status(404).json({
+      message: "존재하지 않거나 비밀번호가 맞지 않습니다",
+    });
   }
-  res.status(400).json({
-    message: "존재하지 않거나 비밀번호가 맞지 않습니다",
-  });
 });
 
 router.delete("/posts/:postId/comments/:commentId", async (req, res) => {
