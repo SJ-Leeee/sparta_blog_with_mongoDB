@@ -58,7 +58,6 @@ router.put("/posts/:postId", async (req, res) => {
   const { user, password, title, content } = req.body;
 
   const existsPosts = await Posts.find({ _id: postId });
-  console.log(existsPosts);
   if (existsPosts.length && password === existsPosts[0].password) {
     await Posts.updateOne(
       { _id: postId },
@@ -72,7 +71,7 @@ router.put("/posts/:postId", async (req, res) => {
         },
       }
     );
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
     });
   }
