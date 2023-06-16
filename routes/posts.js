@@ -112,7 +112,7 @@ router.post("/posts/:postId/comments", async (req, res) => {
       postId: postId,
     });
 
-    res.json({ message: "성공적으로 저장되었습니다." });
+    return res.json({ message: "성공적으로 저장되었습니다." });
   } else if (content === "") {
     return res.json({ message: "댓글을 입력해주세요" });
   }
@@ -165,7 +165,11 @@ router.put("/posts/:postId/comments/:commentId", async (req, res) => {
 
   const existComments = await Comments.find({ _id: commentId });
 
-  if ( existComments.length && password === existComments[0].password && content !== "") {
+  if (
+    existComments.length &&
+    password === existComments[0].password &&
+    content !== ""
+  ) {
     await Comments.updateOne(
       { _id: commentId },
       {
