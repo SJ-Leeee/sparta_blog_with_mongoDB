@@ -201,23 +201,26 @@ router.put(
   }
 );
 
-router.delete("/posts/:postId/comments/:commentId", async (req, res) => {
-  // 게시물 삭제
-  const { commentId } = req.params;
-  const { password } = req.body;
+router.delete(
+  "/posts/:postId/comments/:commentId",
+  authMiddleware,
+  async (req, res) => {
+    // 게시물 삭제
+    const { commentId } = req.params;
+    const { nickname } = res.locals.user;
 
-  const existComments = await Comments.find({ _id: commentId });
+    const existComments = await Comments.find({ _id: commentId });
 
-  if (existComments.length && password === existComments[0].password) {
+    if (nickname !== existComments[0].nickname && existComments.length === 0) {
+      return res.status(400).json({
+        status: "댓글이 존재하지 않거나 삭제권한이 없습니다.",
+      });
+    }
     await Comments.deleteOne({ _id: commentId });
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
     });
-  } else {
-    res.status(400).json({
-      status: "존재하지 않거나 비밀번호가 맞지 않습니다",
-    });
   }
-});
+);
 
 module.exports = router;
