@@ -109,7 +109,7 @@ router.delete("/posts/:postId", authMiddleware, async (req, res) => {
   });
 });
 
-router.post("/posts/:postId/comments",authMiddleware, async (req, res) => {
+router.post("/posts/:postId/comments", authMiddleware, async (req, res) => {
   const { nickname } = res.locals.user;
   const { postId } = req.params;
   const existsPosts = await Posts.find({ _id: postId });
@@ -167,42 +167,39 @@ router.get("/posts/:postId/comments/:commentId", async (req, res) => {
   res.status(200).json({ comments: result });
 });
 
-router.put("/posts/:postId/comments/:commentId", async (req, res) => {
-  // 게시물 수정
-  const { commentId } = req.params;
-  const { nickname, password, content } = req.body;
+router.put(
+  "/posts/:postId/comments/:commentId",
+  authMiddleware,
+  async (req, res) => {
+    // 게시물 수정
+    const { nickname } = res.locals.user;
+    const { commentId } = req.params;
+    const { content } = req.body;
 
-  const existComments = await Comments.find({ _id: commentId });
+    const existComments = await Comments.find({ _id: commentId });
 
-  if (
-    existComments.length &&
-    password === existComments[0].password &&
-    content !== ""
-  ) {
+    if (existComments.length === 0 || nickname !== existComments[0].nickname) {
+      return res.status(404).json({
+        message: "댓글이 존재하지 않거나 수정권한이 없습니다.",
+      });
+    }
+
+    if (content === "") {
+      {
+        return res.status(404).json({
+          message: "댓글을 입력해주세요",
+        });
+      }
+    }
     await Comments.updateOne(
       { _id: commentId },
-      {
-        $set: {
-          nickname,
-          password,
-          content,
-          createdAt: Date(),
-        },
-      }
+      { $set: { nickname, content, createdAt: Date() } }
     );
     res.status(200).json({
       success: true,
     });
-  } else if (content === "") {
-    res.status(400).json({
-      message: "댓글을 입력해주세요",
-    });
-  } else {
-    res.status(404).json({
-      message: "존재하지 않거나 비밀번호가 맞지 않습니다",
-    });
   }
-});
+);
 
 router.delete("/posts/:postId/comments/:commentId", async (req, res) => {
   // 게시물 삭제
