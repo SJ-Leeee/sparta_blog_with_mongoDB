@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Posts = require("../schemas/posts.js");
 const Comments = require("../schemas/commnets.js");
+const authMiddleware = require("../auth-middlewares/auth-middleware.js");
 
 router.get("/posts", async (req, res) => {
   // 게시물 조회
@@ -9,9 +10,8 @@ router.get("/posts", async (req, res) => {
   showPost = posts.map((post) => {
     return {
       _id: post.id,
-      user: post.user,
+      nickname: post.nickname,
       title: post.title,
-      content: post.content,
       createdAt: post.createdAt,
     };
   });
@@ -30,7 +30,7 @@ router.get("/posts/:postId", async (req, res) => {
   result = getPost.map((post) => {
     return {
       _id: post.id,
-      user: post.user,
+      nickname: post.nickname,
       title: post.title,
       content: post.content,
       createdAt: post.createdAt,
@@ -39,11 +39,12 @@ router.get("/posts/:postId", async (req, res) => {
   res.status(200).json({ detail: result });
 });
 
-router.post("/posts", async (req, res) => {
+router.post("/posts", authMiddleware, async (req, res) => {
   // 게시물 등록
-  const { user, password, title, content } = req.body;
+  const { nickname, password } = res.locals.user;
+  const { title, content } = req.body;
   const createPosts = await Posts.create({
-    user,
+    nickname,
     password,
     title,
     content,
@@ -55,7 +56,7 @@ router.post("/posts", async (req, res) => {
 router.put("/posts/:postId", async (req, res) => {
   // 게시물 수정
   const { postId } = req.params;
-  const { user, password, title, content } = req.body;
+  const { nickname, password, title, content } = req.body;
 
   const existsPosts = await Posts.find({ _id: postId });
   if (existsPosts.length && password === existsPosts[0].password) {
@@ -63,7 +64,7 @@ router.put("/posts/:postId", async (req, res) => {
       { _id: postId },
       {
         $set: {
-          user: user,
+          nickname: nickname,
           password: password,
           title: title,
           content: content,
@@ -102,10 +103,10 @@ router.delete("/posts/:postId", async (req, res) => {
 router.post("/posts/:postId/comments", async (req, res) => {
   const { postId } = req.params;
   const existsPosts = await Posts.find({ _id: postId });
-  const { user, password, content } = req.body;
+  const { nickname, password, content } = req.body;
   if (existsPosts.length) {
     const createComments = await Comments.create({
-      user,
+      nickname,
       password,
       content,
       postId: postId,
@@ -126,7 +127,7 @@ router.get("/posts/:postId/comments", async (req, res) => {
   const showComments = getComments.map((comment) => {
     return {
       _id: comment._id,
-      user: comment.user,
+      nickname: comment.nickname,
       content: comment.content,
       postId: postId,
       createdAt: comment.createdAt,
@@ -148,7 +149,7 @@ router.get("/posts/:postId/comments/:commentId", async (req, res) => {
   result = getComments.map((comment) => {
     return {
       _id: comment._id,
-      user: comment.user,
+      nickname: comment.nickname,
       content: comment.content,
       postId: postId,
       createdAt: comment.createdAt,
@@ -160,7 +161,7 @@ router.get("/posts/:postId/comments/:commentId", async (req, res) => {
 router.put("/posts/:postId/comments/:commentId", async (req, res) => {
   // 게시물 수정
   const { commentId } = req.params;
-  const { user, password, content } = req.body;
+  const { nickname, password, content } = req.body;
 
   const existComments = await Comments.find({ _id: commentId });
 
@@ -173,7 +174,7 @@ router.put("/posts/:postId/comments/:commentId", async (req, res) => {
       { _id: commentId },
       {
         $set: {
-          user,
+          nickname,
           password,
           content,
           createdAt: Date(),

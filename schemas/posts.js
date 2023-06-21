@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const postsSchema = new mongoose.Schema({
-  user: {
+  nickname: {
     type: String,
     required: true, // 무조건 있어야 하는 가?
   },
