@@ -5,10 +5,6 @@ const postsSchema = new mongoose.Schema({
     type: String,
     required: true, // 무조건 있어야 하는 가?
   },
-  password: {
-    type: String,
-    required: true,
-  },
   title: {
     type: String,
   },

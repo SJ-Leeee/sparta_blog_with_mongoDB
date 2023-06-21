@@ -1,13 +1,9 @@
 const mongoose = require("mongoose");
 
 const commentsSchema = new mongoose.Schema({
-  user: {
+  nickname: {
     type: String,
     required: true, // 무조건 있어야 하는 가?
-  },
-  password: {
-    type: String,
-    required: true,
   },
   content: {
     type: String,

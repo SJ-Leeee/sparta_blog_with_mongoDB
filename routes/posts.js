@@ -36,16 +36,18 @@ router.get("/posts/:postId", async (req, res) => {
       createdAt: post.createdAt,
     };
   });
+  if (getPost.length === 0) {
+    return res.status(400).json({ message: "게시물이 존재하지 않습니다." });
+  }
   res.status(200).json({ detail: result });
 });
 
 router.post("/posts", authMiddleware, async (req, res) => {
   // 게시물 등록
-  const { nickname, password } = res.locals.user;
+  const { nickname } = res.locals.user;
   const { title, content } = req.body;
   const createPosts = await Posts.create({
     nickname,
-    password,
     title,
     content,
   });
@@ -53,19 +55,18 @@ router.post("/posts", authMiddleware, async (req, res) => {
   res.json({ message: "성공적으로 저장되었습니다." });
 });
 
-router.put("/posts/:postId", async (req, res) => {
+router.put("/posts/:postId", authMiddleware, async (req, res) => {
   // 게시물 수정
+  const { nickname } = res.locals.user;
   const { postId } = req.params;
-  const { nickname, password, title, content } = req.body;
-
+  const { title, content } = req.body;
   const existsPosts = await Posts.find({ _id: postId });
-  if (existsPosts.length && password === existsPosts[0].password) {
+  if (existsPosts.length && existsPosts[0].nickname === nickname) {
     await Posts.updateOne(
       { _id: postId },
       {
         $set: {
           nickname: nickname,
-          password: password,
           title: title,
           content: content,
           createdAt: Date(),
@@ -77,37 +78,45 @@ router.put("/posts/:postId", async (req, res) => {
     });
   }
   res.status(400).json({
-    message: "존재하지 않거나 비밀번호가 맞지 않습니다",
+    message: "게시물이 존재하지 않거나 수정권한이 없습니다.",
   });
 });
 
-router.delete("/posts/:postId", async (req, res) => {
+router.delete("/posts/:postId", authMiddleware, async (req, res) => {
   // 게시물 삭제
+  const { nickname } = res.locals.user;
   const { postId } = req.params;
-  const { password } = req.body;
+  const { isDelete } = req.body;
 
   const existsPosts = await Posts.find({ _id: postId });
 
-  if (existsPosts.length && password === existsPosts[0].password) {
+  if (
+    existsPosts.length &&
+    existsPosts[0].nickname === nickname &&
+    isDelete === "y"
+  ) {
     await Posts.deleteOne({ _id: postId });
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
     });
-  } else {
-    res.status(400).json({
-      status: "존재하지 않거나 비밀번호가 맞지 않습니다",
+  } else if (isDelete !== "y") {
+    return res.status(400).json({
+      message: "삭제동의(isDelete)를 작성하세요",
     });
   }
+  res.status(400).json({
+    message: "게시물이 존재하지 않거나 수정권한이 없습니다.",
+  });
 });
 
-router.post("/posts/:postId/comments", async (req, res) => {
+router.post("/posts/:postId/comments",authMiddleware, async (req, res) => {
+  const { nickname } = res.locals.user;
   const { postId } = req.params;
   const existsPosts = await Posts.find({ _id: postId });
-  const { nickname, password, content } = req.body;
+  const { content } = req.body;
   if (existsPosts.length) {
     const createComments = await Comments.create({
       nickname,
-      password,
       content,
       postId: postId,
     });
